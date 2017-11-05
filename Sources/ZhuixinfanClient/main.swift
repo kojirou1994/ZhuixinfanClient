@@ -4,7 +4,7 @@ import Foundation
 
 let mysql = MySQL()
 
-let connected = mysql.connect(host: "10.0.0.47", user: "root", password: "root", db: "zhuixinfan")
+let connected = mysql.connect(host: "127.0.0.1", user: "root", password: "root", db: "zhuixinfan")
 guard connected else {
     fatalError(mysql.errorMessage())
 }

@@ -83,7 +83,7 @@ func update(timer: Timer? = nil) {
 }
 
 if #available(OSX 10.12, *) {
-    update()
+//    update()
     _ = Timer.scheduledTimer(withTimeInterval: 3600 * 2, repeats: true, block: update)
 } else {
     // Fallback on earlier versions

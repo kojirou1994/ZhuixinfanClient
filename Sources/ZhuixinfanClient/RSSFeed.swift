@@ -13,11 +13,11 @@ func generateXML(sources: [(String, String)]) -> String {
         return """
             <item>
             <title>\(source.0)</title>
-            <link>\(source.1)</link>
+            <link>\(source.1.removingPercentEncoding!)</link>
             <description>\(source.0)</description>
-            <enclosure type="application/x-bittorrent" url="\(source.1)"/>
             </item>
         """
+//        <enclosure type="application/x-bittorrent" url="\(source.1)"/>
     }
     
     return """

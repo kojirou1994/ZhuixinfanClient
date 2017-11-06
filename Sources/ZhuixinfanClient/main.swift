@@ -110,10 +110,12 @@ func fetchNewestSources() -> [(String, String)]? {
 func rss(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcessing {
     guard let pathComponents = URLComponents(string: request.target) else {
         // Invalid path
+        response.done()
         return .discardBody
     }
-    guard pathComponents.path == "zhuixinfan" else {
+    guard pathComponents.path == "/zhuixinfan" else {
         // Undefined path
+        response.done()
         return .discardBody
     }
     if let sources = fetchNewestSources() {

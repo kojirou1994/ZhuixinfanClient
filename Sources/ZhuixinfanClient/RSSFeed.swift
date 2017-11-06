@@ -13,7 +13,7 @@ func generateXML(sources: [(String, String)]) -> String {
         return """
             <item>
             <title>\(source.0)</title>
-            <link>\(source.1)</link>
+            <link><![CDATA[\(source.1)]]></link>
             <description>\(source.0)</description>
             </item>
         """

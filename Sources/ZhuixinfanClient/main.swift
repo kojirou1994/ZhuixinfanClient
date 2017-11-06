@@ -98,10 +98,11 @@ func fetchNewestSources() -> [(String, String)]? {
         print(mysql.errorMessage())
         return nil
     }
+    
     var sources = [(String, String)]()
     mysql.storeResults()?.forEachRow(callback: { (row) in
         if let text = row[0], let magnet = row[1] {
-            sources.append((text, magnet))
+            sources.append((text, magnet.htmlUnescape()))
         }
     })
     return sources.count > 0 ? sources : nil

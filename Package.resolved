@@ -29,6 +29,15 @@
         }
       },
       {
+        "package": "SwiftServerHttp",
+        "repositoryURL": "https://github.com/swift-server/http.git",
+        "state": {
+          "branch": "develop",
+          "revision": "473177815d0a227d2a58c009d7e52677e458512d",
+          "version": null
+        }
+      },
+      {
         "package": "mysqlclient",
         "repositoryURL": "https://github.com/PerfectlySoft/Perfect-mysqlclient.git",
         "state": {

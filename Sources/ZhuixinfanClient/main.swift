@@ -1,6 +1,7 @@
 import MySQL
 import Scrape
 import Foundation
+import HTTP
 
 let mysql = MySQL()
 
@@ -83,10 +84,49 @@ func update(timer: Timer? = nil) {
 
 if #available(OSX 10.12, *) {
     update()
-    _ = Timer.scheduledTimer(withTimeInterval: 3600 * 24, repeats: true, block: update)
+    _ = Timer.scheduledTimer(withTimeInterval: 3600 * 2, repeats: true, block: update)
 } else {
     // Fallback on earlier versions
     fatalError("Requirement: System Version >= 10.12")
 }
+
+/// <#Description#>
+///
+/// - Returns: the count of return value must > 0
+func fetchNewestSources() -> [(String, String)]? {
+    guard mysql.query(statement: "SELECT text, magnet FROM viewresource ORDER BY sid DESC LIMIT 50") else {
+        print(mysql.errorMessage())
+        return nil
+    }
+    var sources = [(String, String)]()
+    mysql.storeResults()?.forEachRow(callback: { (row) in
+        if let text = row[0], let magnet = row[1] {
+            sources.append((text, magnet))
+        }
+    })
+    return sources.count > 0 ? sources : nil
+}
+
+func rss(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcessing {
+    guard let pathComponents = URLComponents(string: request.target) else {
+        // Invalid path
+        return .discardBody
+    }
+    guard pathComponents.path == "zhuixinfan" else {
+        // Undefined path
+        return .discardBody
+    }
+    if let sources = fetchNewestSources() {
+        response.writeHeader(status: .ok)
+        response.writeBody(generateXML(sources: sources))
+    } else {
+        response.writeHeader(status: .badGateway)
+    }
+    response.done()
+    return .discardBody
+}
+
+let server = HTTPServer()
+try! server.start(port: 8080, handler: rss)
 
 RunLoop.main.run()

@@ -2,7 +2,10 @@ import MySQL
 import Scrape
 import Foundation
 import HTTP
+import HeliumLogger
+import LoggerAPI
 
+HeliumLogger.use()
 let mysql = MySQL()
 
 let connected = mysql.connect(host: "127.0.0.1", user: "root", password: "root", db: "zhuixinfan")
@@ -27,7 +30,7 @@ func newestSidRemote() -> Int? {
 
 func newestSidLocal() -> Int? {
     guard mysql.query(statement: "SELECT MAX(sid) FROM viewresource") else {
-        print(mysql.errorMessage())
+        Log.error(mysql.errorMessage())
         return nil
     }
     if let result = mysql.storeResults()?.next(), let sidString = result[0], let sid = Int(sidString) {
@@ -39,7 +42,7 @@ func newestSidLocal() -> Int? {
 
 func sidExists(_ sid: Int) -> Bool {
     guard mysql.query(statement: "select 1 from viewresource where sid = \(sid) limit 1") else {
-        print(mysql.errorMessage())
+        Log.error(mysql.errorMessage())
         return false
     }
     let result = mysql.storeResults()!
@@ -74,9 +77,9 @@ func update(timer: Timer? = nil) {
                 return
             }
             if fetch(sid: sid) {
-                print("sid \(sid) get link successed!")
+                Log.info("sid \(sid) get link successed!")
             } else {
-                print("sid \(sid) get link failed!")
+                Log.info("sid \(sid) get link failed!")
             }
         }
     }
@@ -95,7 +98,7 @@ if #available(OSX 10.12, *) {
 /// - Returns: the count of return value must > 0
 func fetchNewestSources() -> [(String, String)]? {
     guard mysql.query(statement: "SELECT text, magnet FROM viewresource ORDER BY sid DESC LIMIT 50") else {
-        print(mysql.errorMessage())
+        Log.error(mysql.errorMessage())
         return nil
     }
     
@@ -129,7 +132,7 @@ func rss(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcess
     return .discardBody
 }
 
-let server = HTTPServer()
-try! server.start(port: 8080, handler: rss)
+let server = HTTPServer(with: .init(onPort: 8080), requestHandler: rss)
+try! server.start()
 
 RunLoop.main.run()

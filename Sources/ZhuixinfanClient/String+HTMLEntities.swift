@@ -54,7 +54,7 @@ public extension String {
             // result buffer
             var str: String = ""
 
-            for c in self.characters {
+            for c in self {
                 let unicodes = String(c).unicodeScalars
 
                 if !encodeEverything,
@@ -432,7 +432,7 @@ fileprivate func decode(entity: String, entityPrefix: String, strict: Bool) thro
         }
 
         for length in legacyNamedCharactersLengthRange {
-            guard length <= entity.characters.count else {
+            guard length <= entity.count else {
                 break
             }
 

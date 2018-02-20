@@ -9,28 +9,22 @@ import Foundation
 
 func generateXML(sources: [(String, String)]) -> String {
     
-    func generateItem(source: (String, String)) -> String {
-        return """
-            <item>
-            <title>\(source.0)</title>
-            <link><![CDATA[\(source.1)]]></link>
-            <description>\(source.0)</description>
-            </item>
-        """
-//        <enclosure type="application/x-bittorrent" url="\(source.1)"/>
+    func generateItem(source: (String, String)) -> XMLNode {
+        let item = XMLElement(name: "item")
+        item.addChild(XMLElement(name: "title", stringValue: source.0))
+        item.addChild(XMLElement(name: "link", stringValue: "<![CDATA[\(source.1)]]>"))
+        item.addChild(XMLElement(name: "description", stringValue: source.0))
+        return item
     }
     
-    return """
-    <?xml version="1.0" encoding="UTF-8" ?>
-    <rss version="2.0">
-
-    <channel>
-    <title>Zhuixinfan</title>
-    <link>http://www.zhuixinfan.com/main.php</link>
-    <description>Free japan dramas.</description>
-    \(sources.map(generateItem).joined(separator: "\n"))
-    </channel>
-
-    </rss>
-    """
+    let root = XMLElement(name: "rss")
+    root.setAttributesWith(["version": "2.0"])
+    let channel = XMLElement(name: "channel")
+    channel.addChild(XMLElement(name: "title", stringValue: "Zhuixinfan"))
+    channel.addChild(XMLElement(name: "link", stringValue: "http://www.zhuixinfan.com/main.php"))
+    channel.addChild(XMLElement(name: "description", stringValue: "Free japan dramas."))
+    root.addChild(channel)
+    let xml = XMLDocument(rootElement: root)
+    xml.characterEncoding = "UTF-8"
+    return xml.xmlString(options: .nodePrettyPrint)
 }

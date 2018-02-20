@@ -12,7 +12,11 @@ func generateXML(sources: [(String, String)]) -> String {
     func generateItem(source: (String, String)) -> XMLNode {
         let item = XMLElement(name: "item")
         item.addChild(XMLElement(name: "title", stringValue: source.0))
-        item.addChild(XMLElement(name: "link", stringValue: "<![CDATA[\(source.1)]]>"))
+        let link = XMLElement(name: "link", stringValue: "<![CDATA[\(source.1)]]>")
+        let linkCDATA = XMLNode(kind: .text, options: .nodeIsCDATA)
+        linkCDATA.stringValue = source.1
+        link.addChild(linkCDATA)
+        item.addChild(link)
         item.addChild(XMLElement(name: "description", stringValue: source.0))
         return item
     }

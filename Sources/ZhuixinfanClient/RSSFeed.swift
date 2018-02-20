@@ -23,6 +23,9 @@ func generateXML(sources: [(String, String)]) -> String {
     channel.addChild(XMLElement(name: "title", stringValue: "Zhuixinfan"))
     channel.addChild(XMLElement(name: "link", stringValue: "http://www.zhuixinfan.com/main.php"))
     channel.addChild(XMLElement(name: "description", stringValue: "Free japan dramas."))
+    for source in sources {
+        channel.addChild(generateItem(source: source))
+    }
     root.addChild(channel)
     let xml = XMLDocument(rootElement: root)
     xml.characterEncoding = "UTF-8"

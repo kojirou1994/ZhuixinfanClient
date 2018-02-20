@@ -7,7 +7,6 @@ let package = Package(
     name: "ZhuixinfanClient",
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-//        .package(url: "https://github.com/IBM-Swift/swift-html-entities.git", .upToNextMajor(from: "3.0.0")),
         .package(url: "https://github.com/kojirou1994/Scrape.git", from: "1.0.0"),
         .package(url:"https://github.com/PerfectlySoft/Perfect-MySQL.git", from: "2.0.0"),
         .package(url: "https://github.com/swift-server/http.git", .branch("develop")),

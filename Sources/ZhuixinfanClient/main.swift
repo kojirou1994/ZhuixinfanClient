@@ -151,7 +151,7 @@ func rss(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcess
     return .discardBody
 }
 
-let server = HTTPServer(with: .init(onPort: 8080), requestHandler: rss)
-try server.start()
+let server = HTTPServer()
+try server.start(port: 8080, handler: rss)
 
 RunLoop.main.run()

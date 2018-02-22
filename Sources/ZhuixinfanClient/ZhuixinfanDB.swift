@@ -25,6 +25,10 @@ class ZhuixinfanDB {
         }
     }
     
+    deinit {
+        mysql.close()
+    }
+    
     static let newestSid = 9216
     
     static let zxfMainPage = URL(string: "http://www.zhuixinfan.com/main.php")!
@@ -101,50 +105,30 @@ class ZhuixinfanDB {
         }
     }
     
-    func generateRssFeed() -> Foundation.XMLDocument {
-        
-        func generateItem(source: (String, String)) -> Foundation.XMLNode {
-            let item = XMLElement(name: "item")
-            item.addChild(XMLElement(name: "title", stringValue: source.0))
-            let link = XMLElement(name: "link")
-            let linkCDATA = XMLNode(kind: .text, options: .nodeIsCDATA)
-            linkCDATA.stringValue = source.1
-            link.addChild(linkCDATA)
-            item.addChild(link)
-            item.addChild(XMLElement(name: "description", stringValue: source.0))
-            return item
-        }
-        
-        guard mysql.query(statement: "SELECT text, magnet FROM viewresource ORDER BY sid DESC LIMIT 50") else {
-            Log.error(mysql.errorMessage())
-            let root = XMLElement(name: "rss")
-            root.setAttributesWith(["version": "2.0"])
-            let channel = XMLElement(name: "channel")
-            channel.addChild(XMLElement(name: "title", stringValue: "Zhuixinfan"))
-            channel.addChild(XMLElement(name: "link", stringValue: "http://www.zhuixinfan.com/main.php"))
-            channel.addChild(XMLElement(name: "description", stringValue: "Free japan dramas."))
-            root.addChild(channel)
-            let xml = XMLDocument(rootElement: root)
-            xml.characterEncoding = "UTF-8"
-            return xml
-        }
-        
-        var sources = [(String, String)]()
-        mysql.storeResults()?.forEachRow(callback: { (row) in
-            if let text = row[0], let magnet = row[1] {
-                sources.append((text, magnet))
-            }
-        })
-        
+    func generateRssFeed() -> XMLDocument {
         let root = XMLElement(name: "rss")
         root.setAttributesWith(["version": "2.0"])
         let channel = XMLElement(name: "channel")
         channel.addChild(XMLElement(name: "title", stringValue: "Zhuixinfan"))
         channel.addChild(XMLElement(name: "link", stringValue: "http://www.zhuixinfan.com/main.php"))
         channel.addChild(XMLElement(name: "description", stringValue: "Free japan dramas."))
-        for source in sources {
-            channel.addChild(generateItem(source: source))
+        
+        if mysql.query(statement: "SELECT text, magnet FROM viewresource ORDER BY sid DESC LIMIT 50") {
+            mysql.storeResults()?.forEachRow(callback: { (row) in
+                if let text = row[0], let magnet = row[1] {
+                    let item = XMLElement(name: "item")
+                    item.addChild(XMLElement(name: "title", stringValue: text))
+                    let link = XMLElement(name: "link")
+                    let linkCDATA = XMLNode(kind: .text, options: .nodeIsCDATA)
+                    linkCDATA.stringValue = magnet
+                    link.addChild(linkCDATA)
+                    item.addChild(link)
+                    item.addChild(XMLElement(name: "description", stringValue: text))
+                    channel.addChild(item)
+                }
+            })
         }
+        
         root.addChild(channel)
         let xml = XMLDocument(rootElement: root)
         xml.characterEncoding = "UTF-8"

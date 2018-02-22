@@ -47,9 +47,10 @@ class ZhuixinfanDB {
             return nil
         }
         if let result = mysql.storeResults()?.next(), let sidString = result[0], let sid = Int(sidString) {
+            Log.error(sidString + "is not a valid Sid.")
             return sid
         } else {
-            return nil
+            return 0
         }
     }
     

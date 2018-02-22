@@ -68,10 +68,17 @@ class ZhuixinfanDB {
     }
     
     func fetch(sid: Int) -> Bool {
-        guard let link = URL(string: "http://www.zhuixinfan.com/main.php?mod=viewresource&sid=\(sid)"),
-            let document = HTMLDocument(url: link, encoding: .utf8) else {
-                Log.error("Cannot open/parse zhuixinfan website.")
-                return false
+        guard let link = URL(string: "http://www.zhuixinfan.com/main.php?mod=viewresource&sid=\(sid)") else {
+            Log.error("Not a valid url for sid \(sid)")
+            return false
+        }
+        guard let content = try? Data.init(contentsOf: link) else {
+            Log.error("Cannot open zhuixinfan website.")
+            return false
+        }
+        guard let document = HTMLDocument(html: content, encoding: .utf8) else {
+            Log.error("Cannot parse zhuixinfan website.")
+            return false
         }
         let textResult = document.search(byXPath: "//*[@id=\"pdtname\"]")
         let ed2kResult = document.search(byXPath: "//*[@id=\"emule_url\"]")
@@ -83,7 +90,13 @@ class ZhuixinfanDB {
                 Log.warning("Cannot get links from zhuixinfan site.")
                 return false
         }
-        return mysql.query(statement: newSource.insertQuery)
+        let result = mysql.query(statement: newSource.insertQuery)
+        if result {
+            Log.error("Insert to mysql success")
+        } else {
+            Log.error("Insert to mysql failed")
+        }
+        return result
     }
     
     func generateRssFeed() -> Foundation.XMLDocument {

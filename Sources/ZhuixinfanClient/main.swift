@@ -1,5 +1,4 @@
 import MySQL
-import Scrape
 import Foundation
 import HTTP
 import HeliumLogger
@@ -14,8 +13,9 @@ HeliumLogger.use()
 let db = ZhuixinfanDB()
 
 func update(timer: Timer? = nil) {
-    guard let newestSidLocal = db.newestSidLocal(), case let newestSidRemote = db.newestSidRemote(),
-          newestSidLocal < newestSidRemote else {
+    let newestSidLocal = db.newestSidLocal()
+    let newestSidRemote = db.newestSidRemote()
+    guard newestSidLocal < newestSidRemote else {
         return
     }
     for sid in newestSidLocal...newestSidRemote {

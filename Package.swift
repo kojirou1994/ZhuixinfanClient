@@ -7,7 +7,6 @@ let package = Package(
     name: "ZhuixinfanClient",
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/kojirou1994/Scrape.git", from: "1.0.0"),
         .package(url:"https://github.com/PerfectlySoft/Perfect-MySQL.git", from: "2.0.0"),
         .package(url: "https://github.com/swift-server/http.git", from: "0.1.0"),
         .package(url: "https://github.com/IBM-Swift/HeliumLogger", from: "1.7.0")
@@ -17,6 +16,6 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "ZhuixinfanClient",
-            dependencies: ["MySQL", "Scrape", "HTTP", "HeliumLogger"])
+            dependencies: ["MySQL", "HTTP", "HeliumLogger"])
     ]
 )

@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Scrape
 import MySQL
 import LoggerAPI
 
@@ -28,24 +27,30 @@ class ZhuixinfanDB {
     
     static let newestSid = 9216
     
+    static let zxfMainPage = URL(string: "http://www.zhuixinfan.com/main.php")!
+    
     func newestSidRemote() -> Int {
-        guard let link = URL(string: "http://www.zhuixinfan.com/main.php"),
-            let document = HTMLDocument(url: link, encoding: .utf8) else {
-                Log.error("Cannot open/parse zhuixinfan website.")
-                return ZhuixinfanDB.newestSid
+        do {
+            let document = try XMLDocument(contentsOf: ZhuixinfanDB.zxfMainPage, options: .documentTidyHTML)
+            for table in 2...8 {
+                if let result = try document.nodes(forXPath: "//*[@id=\"wp\"]/table[\(table)]/tr[2]/td[2]/a[2]").first as? XMLElement,
+                    let hrefNode = result.attribute(forName: "href"),
+                    let href = hrefNode.stringValue,
+                    let url = URLComponents(string: href),
+                    let sidString = url.queryItems?.first(where: { (item) -> Bool in
+                        item.name == "sid"
+                    })?.value {
+                    return Int(sidString) ?? ZhuixinfanDB.newestSid
+                }
+            }
+            return ZhuixinfanDB.newestSid
+        } catch {
+            Log.error(error.localizedDescription)
+            return ZhuixinfanDB.newestSid
         }
-        guard let result = document.search(byXPath: "//*[@id=\"wp\"]/table[2]/tr[2]/td[2]/a[2]").first?["href"],
-            let url = URLComponents(string: result),
-            let sid = url.queryItems?.first(where: { (item) -> Bool in
-                item.name == "sid"
-            })?.value else {
-                Log.warning("No newest sid on zhuixinfan website.")
-                return ZhuixinfanDB.newestSid
-        }
-        return Int(sid) ?? ZhuixinfanDB.newestSid
     }
     
-    func newestSidLocal() -> Int? {
+    func newestSidLocal() -> Int {
         guard mysql.query(statement: "SELECT MAX(sid) FROM viewresource") else {
             Log.error(mysql.errorMessage())
             return 0
@@ -72,31 +77,30 @@ class ZhuixinfanDB {
             Log.error("Not a valid url for sid \(sid)")
             return false
         }
-        guard let content = try? Data.init(contentsOf: link) else {
-            Log.error("Cannot open zhuixinfan website.")
+        
+        do {
+            let document  = try XMLDocument(contentsOf: link, options: XMLNode.Options.documentTidyHTML)
+            let textResult = try document.nodes(forXPath: "//*[@id=\"pdtname\"]")
+            let ed2kResult = try document.nodes(forXPath: "//*[@id=\"emule_url\"]")
+            let magnetResult = try document.nodes(forXPath: "//*[@id=\"torrent_url\"]")
+            guard let text = textResult.first?.stringValue,
+                case let magnet = magnetResult.first?.stringValue ?? "",
+                case let ed2k = ed2kResult.first?.stringValue ?? "",
+                let newSource = ZhuixinfanSource(sid: sid, text: text, ed2k: ed2k, magnet: magnet) else {
+                    Log.warning("Cannot get links from zhuixinfan site.")
+                    return false
+            }
+            let result = mysql.query(statement: newSource.insertQuery)
+            if result {
+                Log.error("Insert to mysql success")
+            } else {
+                Log.error("Insert to mysql failed")
+            }
+            return result
+        } catch {
+            Log.error(error.localizedDescription)
             return false
         }
-        guard let document = HTMLDocument(html: content, encoding: .utf8) else {
-            Log.error("Cannot parse zhuixinfan website.")
-            return false
-        }
-        let textResult = document.search(byXPath: "//*[@id=\"pdtname\"]")
-        let ed2kResult = document.search(byXPath: "//*[@id=\"emule_url\"]")
-        let magnetResult = document.search(byXPath: "//*[@id=\"torrent_url\"]")
-        guard let text = textResult.first?.text,
-            case let magnet = magnetResult.first?.text ?? "",
-            case let ed2k = ed2kResult.first?.text ?? "",
-            let newSource = ZhuixinfanSource(sid: sid, text: text, ed2k: ed2k, magnet: magnet) else {
-                Log.warning("Cannot get links from zhuixinfan site.")
-                return false
-        }
-        let result = mysql.query(statement: newSource.insertQuery)
-        if result {
-            Log.error("Insert to mysql success")
-        } else {
-            Log.error("Insert to mysql failed")
-        }
-        return result
     }
     
     func generateRssFeed() -> Foundation.XMLDocument {

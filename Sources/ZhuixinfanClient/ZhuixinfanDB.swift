@@ -48,7 +48,7 @@ class ZhuixinfanDB {
     func newestSidLocal() -> Int? {
         guard mysql.query(statement: "SELECT MAX(sid) FROM viewresource") else {
             Log.error(mysql.errorMessage())
-            return nil
+            return 0
         }
         if let result = mysql.storeResults()?.next(), let sidString = result[0], let sid = Int(sidString) {
             Log.error(sidString + "is not a valid local Sid.")
@@ -70,6 +70,7 @@ class ZhuixinfanDB {
     func fetch(sid: Int) -> Bool {
         guard let link = URL(string: "http://www.zhuixinfan.com/main.php?mod=viewresource&sid=\(sid)"),
             let document = HTMLDocument(url: link, encoding: .utf8) else {
+                Log.error("Cannot open/parse zhuixinfan website.")
                 return false
         }
         let textResult = document.search(byXPath: "//*[@id=\"pdtname\"]")
@@ -79,6 +80,7 @@ class ZhuixinfanDB {
             case let magnet = magnetResult.first?.text ?? "",
             case let ed2k = ed2kResult.first?.text ?? "",
             let newSource = ZhuixinfanSource(sid: sid, text: text, ed2k: ed2k, magnet: magnet) else {
+                Log.warning("Cannot get links from zhuixinfan site.")
                 return false
         }
         return mysql.query(statement: newSource.insertQuery)

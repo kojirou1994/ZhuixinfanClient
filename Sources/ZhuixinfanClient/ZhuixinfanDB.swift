@@ -55,7 +55,7 @@ class ZhuixinfanDB {
             Log.error(mysql.errorMessage())
             return 0
         }
-        if let result = mysql.storeResults()?.next(), let sidString = result[0], let sid = Int(sidString) else {
+        if let result = mysql.storeResults()?.next(), let sidString = result[0], let sid = Int(sidString) {
             return sid
         }
         return 0

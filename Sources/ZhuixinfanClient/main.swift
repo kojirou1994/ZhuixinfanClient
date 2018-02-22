@@ -14,7 +14,7 @@ HeliumLogger.use()
 let db = ZhuixinfanDB()
 
 func update(timer: Timer? = nil) {
-    guard let newestSidLocal = db.newestSidLocal(), let newestSidRemote = db.newestSidRemote(),
+    guard let newestSidLocal = db.newestSidLocal(), case let newestSidRemote = db.newestSidRemote(),
           newestSidLocal < newestSidRemote else {
         return
     }
@@ -58,12 +58,8 @@ func rss(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcess
         response.done()
         return .discardBody
     }
-    if let sources = db.fetchNewestSources() {
-        response.writeHeader(status: .ok)
-        response.writeBody(generateXML(sources: sources))
-    } else {
-        response.writeHeader(status: .badGateway)
-    }
+    response.writeHeader(status: .ok)
+    response.writeBody(db.generateRssFeed().xmlString)
     response.done()
     return .discardBody
 }

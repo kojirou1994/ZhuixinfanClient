@@ -55,12 +55,10 @@ class ZhuixinfanDB {
             Log.error(mysql.errorMessage())
             return 0
         }
-        if let result = mysql.storeResults()?.next(), let sidString = result[0], let sid = Int(sidString) {
-            Log.error(sidString + "is not a valid local Sid.")
+        if let result = mysql.storeResults()?.next(), let sidString = result[0], let sid = Int(sidString) else {
             return sid
-        } else {
-            return 0
         }
+        return 0
     }
     
     func sidExists(_ sid: Int) -> Bool {

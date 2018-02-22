@@ -30,10 +30,8 @@ func update(timer: Timer? = nil) {
     }
 }
 
-#if os(Linux)
-update()
-_ = Timer.scheduledTimer(withTimeInterval: 3600 * 2, repeats: true, block: update)
-#elseif os(macOS)
+
+#if os(macOS)
 if #available(OSX 10.12, *) {
     update()
     _ = Timer.scheduledTimer(withTimeInterval: 3600 * 2, repeats: true, block: update)
@@ -41,6 +39,9 @@ if #available(OSX 10.12, *) {
     // Fallback on earlier versions
     fatalError("Requirement: System Version >= 10.12")
 }
+#else
+update()
+_ = Timer.scheduledTimer(withTimeInterval: 3600 * 2, repeats: true, block: update)
 #endif
 
 func rss(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcessing {

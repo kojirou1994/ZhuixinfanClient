@@ -30,16 +30,22 @@ func update(timer: Timer? = nil) {
     }
 }
 
+#if DEBUG
+let updateTimeInterval: TimeInterval = 30
+#else
+let updateTimeInterval: TimeInterval = 3600 * 2
+#endif
 
 #if os(macOS)
 if #available(OSX 10.12, *) {
     update()
-    _ = Timer.scheduledTimer(withTimeInterval: 3600 * 2, repeats: true, block: update)
+    _ = Timer.scheduledTimer(withTimeInterval: updateTimeInterval, repeats: true, block: update)
 } else {
     // Fallback on earlier versions
     fatalError("Requirement: System Version >= 10.12")
 }
 #else
+
 update()
 _ = Timer.scheduledTimer(withTimeInterval: 3600 * 2, repeats: true, block: update)
 #endif

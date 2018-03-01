@@ -65,7 +65,7 @@ func rss(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcess
         return .discardBody
     }
     response.writeHeader(status: .ok)
-    response.writeBody(db.generateRssFeed().xmlString)
+    response.writeBody(db.generateRssFeed())
     response.done()
     return .discardBody
 }

@@ -13,6 +13,7 @@ HeliumLogger.use()
 let db = ZhuixinfanDB()
 
 func update(timer: Timer? = nil) {
+    Log.info("Begin update")
     let newestSidLocal = db.newestSidLocal()
     let newestSidRemote = db.newestSidRemote()
     guard newestSidLocal < newestSidRemote else {
@@ -20,14 +21,14 @@ func update(timer: Timer? = nil) {
     }
     for sid in newestSidLocal...newestSidRemote {
         if db.sidExists(sid) {
-            return
-        }
-        if db.fetch(sid: sid) {
+            // do nothing
+        } else if db.fetch(sid: sid) {
             Log.info("sid \(sid) get link successed!")
         } else {
             Log.info("sid \(sid) get link failed!")
         }
     }
+    Log.info("End update")
 }
 
 #if DEBUG
@@ -45,9 +46,8 @@ if #available(OSX 10.12, *) {
     fatalError("Requirement: System Version >= 10.12")
 }
 #else
-
 update()
-_ = Timer.scheduledTimer(withTimeInterval: 3600 * 2, repeats: true, block: update)
+_ = Timer.scheduledTimer(withTimeInterval: updateTimeInterval, repeats: true, block: update)
 #endif
 
 func rss(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcessing {

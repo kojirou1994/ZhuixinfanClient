@@ -1,6 +1,6 @@
 import MySQL
 import Foundation
-import HTTP
+import Vapor
 import HeliumLogger
 import LoggerAPI
 
@@ -50,27 +50,11 @@ update()
 _ = Timer.scheduledTimer(withTimeInterval: updateTimeInterval, repeats: true, block: update)
 #endif
 
-func rss(request: HTTPRequest, response: HTTPResponseWriter ) -> HTTPBodyProcessing {
-    Log.debug("Receive request: \(request)")
-    guard let pathComponents = URLComponents(string: request.target) else {
-        // Invalid path
-        response.writeHeader(status: .badRequest)
-        response.done()
-        return .discardBody
-    }
-    guard pathComponents.path == "/zhuixinfan" else {
-        // Undefined path
-        response.writeHeader(status: .badGateway)
-        response.done()
-        return .discardBody
-    }
-    response.writeHeader(status: .ok)
-    response.writeBody(db.generateRssFeed())
-    response.done()
-    return .discardBody
+let drop = try Droplet.init()
+
+drop.get("zhuixinfan") { (req) -> ResponseRepresentable in
+    Log.debug("Receive request: \(req)")
+    return db.generateRssFeed()
 }
 
-let server = HTTPServer()
-try server.start(port: 8082, handler: rss)
-
-RunLoop.main.run()
+try drop.run()

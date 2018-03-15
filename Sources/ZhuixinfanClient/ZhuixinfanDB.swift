@@ -29,7 +29,7 @@ class ZhuixinfanDB {
         mysql.close()
     }
     
-    static let newestSid = 9216
+    static let newestSid = 9271
     
     static let zxfMainPage = URL(string: "http://www.zhuixinfan.com/main.php")!
     

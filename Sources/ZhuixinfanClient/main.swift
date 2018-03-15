@@ -3,6 +3,7 @@ import Foundation
 import Vapor
 import HeliumLogger
 import LoggerAPI
+import Jobs
 
 #if DEBUG
 HeliumLogger.use(.debug)
@@ -12,7 +13,13 @@ HeliumLogger.use()
 
 let db = ZhuixinfanDB()
 
-func update(timer: Timer? = nil) {
+#if DEBUG
+let updateTimeInterval: TimeInterval = 30
+#else
+let updateTimeInterval: TimeInterval = 3600 * 2
+#endif
+
+Jobs.add(interval: .seconds(updateTimeInterval)) {
     Log.info("Begin update")
     let newestSidLocal = db.newestSidLocal()
     let newestSidRemote = db.newestSidRemote()
@@ -30,25 +37,6 @@ func update(timer: Timer? = nil) {
     }
     Log.info("End update")
 }
-
-#if DEBUG
-let updateTimeInterval: TimeInterval = 30
-#else
-let updateTimeInterval: TimeInterval = 3600 * 2
-#endif
-
-#if os(macOS)
-if #available(OSX 10.12, *) {
-    update()
-    _ = Timer.scheduledTimer(withTimeInterval: updateTimeInterval, repeats: true, block: update)
-} else {
-    // Fallback on earlier versions
-    fatalError("Requirement: System Version >= 10.12")
-}
-#else
-update()
-_ = Timer.scheduledTimer(withTimeInterval: updateTimeInterval, repeats: true, block: update)
-#endif
 
 let drop = try Droplet.init()
 

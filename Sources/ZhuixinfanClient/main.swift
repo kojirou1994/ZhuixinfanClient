@@ -42,7 +42,7 @@ let drop = try Droplet.init()
 
 drop.get("zhuixinfan") { (req) -> ResponseRepresentable in
     Log.debug("Receive request: \(req)")
-    return db.generateRssFeed()
+    return Response(status: .ok, headers: [.contentType: "application/xml"], body: db.generateRssFeed())
 }
 
 try drop.run()

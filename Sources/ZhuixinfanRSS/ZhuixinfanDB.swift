@@ -6,30 +6,30 @@
 //
 
 import Foundation
-import MySQL
+import SwiftKuery
+import SwiftKueryORM
+import SwiftKueryPostgreSQL
 import LoggerAPI
 
 class ZhuixinfanDB {
     
-    let mysql: MySQL
+    let server: ConnectionPool
     
     init() {
-        mysql = MySQL()
-        #if DEBUG
-        let connected = mysql.connect(host: "10.0.0.47", user: "root", password: "root", db: "zhuixinfan")
-        #else
-        let connected = mysql.connect(host: "127.0.0.1", user: "root", password: "root", db: "zhuixinfan")
-        #endif
-        guard connected else {
-            fatalError(mysql.errorMessage())
+        server = PostgreSQLConnection.createPool(host: "localhost", port: 5432, options: [.databaseName("zhuixinfan")], poolOptions: ConnectionPoolOptions(initialCapacity: 10, maxCapacity: 50, timeout: 10000))
+        Database.default = Database.init(server)
+        do {
+            try ZhuixinfanResource.createTableSync()
+        } catch {
+            print(error)
         }
     }
     
     deinit {
-        mysql.close()
+        server.disconnect()
     }
     
-    static let newestSid = 9271
+    static let newestSid = 9539
     
     static let zxfMainPage = URL(string: "http://www.zhuixinfan.com/main.php")!
     
@@ -56,24 +56,51 @@ class ZhuixinfanDB {
         }
     }
     
-    func newestSidLocal() -> Int {
-        guard mysql.query(statement: "SELECT MAX(sid) FROM viewresource") else {
-            Log.error(mysql.errorMessage())
-            return 0
-        }
-        if let result = mysql.storeResults()?.next(), let sidString = result[0], let sid = Int(sidString) {
-            return sid
-        }
-        return 0
+    func newestSidLocal(callback: @escaping (Int) -> ()) {
+        let table = try! ZhuixinfanResource.getTable()
+        
+        let query = Select.init(max(RawField.init("sid")), from: table)
+
+        server.getConnection()?.execute(query: query, onCompletion: { (result) in
+
+            if let rows = result.asRows, let row = rows.first, let sid = row.values.first, let sidValue = sid as? Int64 {
+                callback(Int(sidValue))
+            } else {
+                callback(0)
+                Log.info(result.asError!.localizedDescription)
+            }
+
+        })
+
     }
     
     func sidExists(_ sid: Int) -> Bool {
-        guard mysql.query(statement: "select 1 from viewresource where sid = \(sid) limit 1") else {
-            Log.error(mysql.errorMessage())
-            return false
+        
+        struct QuerySid: QueryParams {
+            let sid: Int
         }
-        let result = mysql.storeResults()!
-        return result.next()?[0] == "1"
+        var res = false
+        let cond = NSCondition()
+        cond.lock()
+        var taskFinished = false
+        ZhuixinfanResource.find(id: sid) { (source, error) in
+            cond.lock()
+            if let _ = source {
+                res = true
+            } else {
+                print(error?.description ?? "No Error Info.")
+            }
+            taskFinished = true
+            cond.signal()
+            cond.unlock()
+        }
+        while taskFinished == false {
+            cond.wait()
+        }
+        cond.unlock()
+        
+        return res
+
     }
     
     func fetch(sid: Int) -> Bool {
@@ -87,27 +114,44 @@ class ZhuixinfanDB {
                 let textResult = try document.nodes(forXPath: "//*[@id=\"pdtname\"]")
                 let ed2kResult = try document.nodes(forXPath: "//*[@id=\"emule_url\"]")
                 let magnetResult = try document.nodes(forXPath: "//*[@id=\"torrent_url\"]")
+                let drive1Result = try document.nodes(forXPath: "//*[@id=\"wp\"]/div[2]/div/div[2]/div[2]/a[3]")
+                let drive2Result = try document.nodes(forXPath: "//*[@id=\"wp\"]/div[2]/div/div[2]/div[2]/a[4]")
                 guard let text = textResult.first?.stringValue,
                     case let magnet = magnetResult.first?.stringValue ?? "",
                     case let ed2k = ed2kResult.first?.stringValue ?? "",
-                    let newSource = ZhuixinfanSource(sid: sid, text: text, ed2k: ed2k, magnet: magnet) else {
-                        Log.warning("Cannot get links from zhuixinfan site.")
+                    case let drive1Node = drive1Result.first as? XMLElement,
+                    case let drive1 = drive1Node?.attribute(forName: "href")?.stringValue,
+                    case let drive2Node = drive2Result.first as? XMLElement,
+                    case let drive2 = drive2Node?.attribute(forName: "href")?.stringValue,
+                    let newSource = ZhuixinfanResource(sid: sid, text: text, ed2k: ed2k, magnet: magnet, drive1: drive1, drive2: drive2) else {
                         return false
                 }
-                let result = mysql.query(statement: newSource.insertQuery)
-                if result {
-                    Log.error("Insert to mysql success")
-                } else {
-                    Log.error("Insert to mysql failed")
+                var res = false
+                let cond = NSCondition()
+                cond.lock()
+                var taskFinished = false
+                newSource.save({ (source, error) in
+                    if error == nil {
+                        res = true
+                    } else {
+                        dump(error!)
+                    }
+                    taskFinished = true
+                    cond.signal()
+                    cond.unlock()
+                })
+                while taskFinished == false {
+                    cond.wait()
                 }
-                return result
+                cond.unlock()
+                return res
             } catch {
                 Log.error(error.localizedDescription)
                 return false
             }
         })
     }
-    
+    /*
     func generateRssFeed() -> String {
         return autoreleasepool(invoking: { () -> String in
             let root = XMLElement(name: "rss")
@@ -116,6 +160,10 @@ class ZhuixinfanDB {
             channel.addChild(XMLElement(name: "title", stringValue: "Zhuixinfan"))
             channel.addChild(XMLElement(name: "link", stringValue: "http://www.zhuixinfan.com/main.php"))
             channel.addChild(XMLElement(name: "description", stringValue: "Free japan dramas."))
+            
+            let query = Select.init([RawField.init("text"), RawField.init("magnet")], from: try! ZhuixinfanSource.getTable())
+                            .order(by: OrderBy.DESC(RawField.init("sid")))
+                            .limit(to: 50)
             
             if mysql.query(statement: "SELECT text, magnet FROM viewresource ORDER BY sid DESC LIMIT 50") {
                 mysql.storeResults()?.forEachRow(callback: { (row) in
@@ -139,4 +187,5 @@ class ZhuixinfanDB {
             return xml.xmlString
         })
     }
+ */
 }

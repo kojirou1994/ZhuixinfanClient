@@ -6,8 +6,10 @@
 //
 
 import Foundation
+import SwiftKueryORM
 
-struct ZhuixinfanSource {
+struct ZhuixinfanResource: Codable {
+    
     let sid: Int
     let text: String
     let ed2k: String
@@ -35,5 +37,16 @@ struct ZhuixinfanSource {
         VALUES
         (\(sid), "\(text)", "\(ed2k)", "\(magnet)", "\(drive1 ?? "")", "\(drive2 ?? "")");
         """
+    }
+}
+
+extension ZhuixinfanResource: Model {
+    
+    static var tableName: String {
+        return "viewresource"
+    }
+    
+    static var idColumnName: String {
+        return "sid"
     }
 }

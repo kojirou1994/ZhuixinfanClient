@@ -18,6 +18,9 @@ let updateTimeInterval: TimeInterval = 30
 let updateTimeInterval: TimeInterval = 3600 * 2
 #endif
 
+#if DEBUG
+Log.debug("DEBUG MODE")
+#else
 var working = false
 
 Jobs.add(interval: .seconds(updateTimeInterval)) {
@@ -45,15 +48,18 @@ Jobs.add(interval: .seconds(updateTimeInterval)) {
         })
     }
 }
+#endif
 
 let router = Router()
-/*
+
 router.get("/zhuixinfan") { request, response, next in
     Log.debug("Receive request: \(request)")
     response.headers["content-type"] = "application/xml"
-    response.send(db.generateRssFeed())
-    next()
+    db.generateRssFeed(cb: { (xml) in
+        response.send(xml)
+        next()
+    })
 }
-*/
+
 Kitura.addHTTPServer(onPort: 8082, with: router)
 Kitura.run()

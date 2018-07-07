@@ -151,41 +151,45 @@ class ZhuixinfanDB {
             }
         })
     }
-    /*
-    func generateRssFeed() -> String {
-        return autoreleasepool(invoking: { () -> String in
-            let root = XMLElement(name: "rss")
-            root.setAttributesWith(["version": "2.0"])
-            let channel = XMLElement(name: "channel")
-            channel.addChild(XMLElement(name: "title", stringValue: "Zhuixinfan"))
-            channel.addChild(XMLElement(name: "link", stringValue: "http://www.zhuixinfan.com/main.php"))
-            channel.addChild(XMLElement(name: "description", stringValue: "Free japan dramas."))
-            
-            let query = Select.init([RawField.init("text"), RawField.init("magnet")], from: try! ZhuixinfanSource.getTable())
-                            .order(by: OrderBy.DESC(RawField.init("sid")))
-                            .limit(to: 50)
-            
-            if mysql.query(statement: "SELECT text, magnet FROM viewresource ORDER BY sid DESC LIMIT 50") {
-                mysql.storeResults()?.forEachRow(callback: { (row) in
-                    if let text = row[0], let magnet = row[1] {
-                        let item = XMLElement(name: "item")
-                        item.addChild(XMLElement(name: "title", stringValue: text))
-                        let link = XMLElement(name: "link")
-                        let linkCDATA = XMLNode(kind: .text, options: .nodeIsCDATA)
-                        linkCDATA.stringValue = magnet
-                        link.addChild(linkCDATA)
-                        item.addChild(link)
-                        item.addChild(XMLElement(name: "description", stringValue: text))
-                        channel.addChild(item)
-                    }
-                })
+    
+    func generateRssFeed(cb: @escaping (String) -> ()) {
+        let query = Select.init(from: try! ZhuixinfanResource.getTable())
+                        .order(by: OrderBy.DESC(RawField.init("sid")))
+                        .limit(to: 50)
+        ZhuixinfanResource.executeQuery(query: query) { (resources, error) in
+            guard let resources = resources, error == nil else {
+                Log.error(error?.description ?? "NO ERROR INFO")
+                cb("")
+                return
             }
-            
-            root.addChild(channel)
-            let xml = XMLDocument(rootElement: root)
-            xml.characterEncoding = "UTF-8"
-            return xml.xmlString
-        })
+            autoreleasepool(invoking: {
+                let root = XMLElement(name: "rss")
+                root.setAttributesWith(["version": "2.0"])
+                let channel = XMLElement(name: "channel")
+                channel.addChild(XMLElement(name: "title", stringValue: "Zhuixinfan"))
+                channel.addChild(XMLElement(name: "link", stringValue: "http://www.zhuixinfan.com/main.php"))
+                channel.addChild(XMLElement(name: "description", stringValue: "Free japan dramas."))
+                
+                resources.forEach({ (resource) in
+                    let item = XMLElement(name: "item")
+                    item.addChild(XMLElement(name: "title", stringValue: resource.text))
+                    let link = XMLElement(name: "link")
+                    let linkCDATA = XMLNode(kind: .text, options: .nodeIsCDATA)
+                    linkCDATA.stringValue = resource.magnet
+                    link.addChild(linkCDATA)
+                    item.addChild(link)
+                    item.addChild(XMLElement(name: "description", stringValue: resource.text))
+                    channel.addChild(item)
+                })
+                
+                root.addChild(channel)
+                let xml = XMLDocument(rootElement: root)
+                xml.characterEncoding = "UTF-8"
+                cb(xml.xmlString)
+            })
+
+        }
+        
     }
- */
+
 }

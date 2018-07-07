@@ -46,4 +46,5 @@ extension ZhuixinfanResource: Model {
     static var idColumnName: String {
         return "sid"
     }
+    
 }

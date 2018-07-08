@@ -30,8 +30,9 @@ Jobs.add(interval: .seconds(updateTimeInterval)) {
         working.toggle()
         Log.info("Begin update")
         db.newestSidLocal(callback: { (newestSidLocal) in
+            let newestSidLocal = newestSidLocal + 1
             let newestSidRemote = db.newestSidRemote()
-            guard newestSidLocal < newestSidRemote else {
+            guard newestSidLocal <= newestSidRemote else {
                 Log.info("Newest SID local: \(newestSidLocal), Newest SID remote: \(newestSidRemote)")
                 return
             }

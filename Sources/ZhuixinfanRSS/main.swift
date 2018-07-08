@@ -46,12 +46,9 @@ Jobs.add(interval: .seconds(updateTimeInterval)) {
             }
             Log.info("Start get links from \(newestSidLocal) to \(newestSidRemote)")
             for sid in newestSidLocal...newestSidRemote {
-                if db.fetch(sid: sid) {
-                    Log.info("sid \(sid) get link successed!")
-                } else {
-                    Log.info("sid \(sid) get link failed!")
-                }
+                db.fetch(sid: sid)
             }
+            db.fetchQueue.waitUntilAllOperationsAreFinished()
             Log.info("Finish update")
             working.toggle()
         })

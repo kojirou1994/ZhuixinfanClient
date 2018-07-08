@@ -23,6 +23,8 @@ class ZhuixinfanDB {
         } catch {
             print(error)
         }
+        fetchQueue = OperationQueue.init()
+        fetchQueue.maxConcurrentOperationCount = 8
     }
     
     deinit {
@@ -103,12 +105,11 @@ class ZhuixinfanDB {
 
     }
     
-    func fetch(sid: Int) -> Bool {
-        guard let link = URL(string: "http://www.zhuixinfan.com/main.php?mod=viewresource&sid=\(sid)") else {
-            Log.error("Not a valid url for sid \(sid)")
-            return false
-        }
-        return autoreleasepool(invoking: { () -> Bool in
+    let fetchQueue: OperationQueue
+    
+    func fetch(sid: Int) {
+        let link = URL(string: "http://www.zhuixinfan.com/main.php?mod=viewresource&sid=\(sid)")!
+        fetchQueue.addOperation {
             do {
                 let document  = try XMLDocument(contentsOf: link, options: XMLNode.Options.documentTidyHTML)
                 let textResult = try document.nodes(forXPath: "//*[@id=\"pdtname\"]")
@@ -124,32 +125,24 @@ class ZhuixinfanDB {
                     case let drive2Node = drive2Result.first as? XMLElement,
                     case let drive2 = drive2Node?.attribute(forName: "href")?.stringValue,
                     let newSource = ZhuixinfanResource(sid: sid, text: text, ed2k: ed2k, magnet: magnet, drive1: drive1, drive2: drive2) else {
-                        return false
+                        return
                 }
-                var res = false
-                let cond = NSCondition()
-                cond.lock()
-                var taskFinished = false
+
                 newSource.save({ (source, error) in
                     if error == nil {
-                        res = true
+                        Log.info("sid \(sid) get link successed!")
                     } else {
+                        Log.info("sid \(sid) get link failed!")
                         dump(error!)
                     }
-                    taskFinished = true
-                    cond.signal()
-                    cond.unlock()
+
                 })
-                while taskFinished == false {
-                    cond.wait()
-                }
-                cond.unlock()
-                return res
+
             } catch {
                 Log.error(error.localizedDescription)
-                return false
+                Log.info("sid \(sid) get link failed!")
             }
-        })
+        }
     }
     
     func generateRssFeed(cb: @escaping (String) -> ()) {

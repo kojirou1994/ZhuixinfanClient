@@ -36,25 +36,23 @@ class ZhuixinfanDB {
     static let zxfMainPage = URL(string: "http://www.zhuixinfan.com/main.php")!
     
     func newestSidRemote() -> Int {
-        return autoreleasepool { () -> Int in
-            do {
-                let document = try XMLDocument(contentsOf: ZhuixinfanDB.zxfMainPage, options: .documentTidyHTML)
-                for table in 2...8 {
-                    if let result = try document.nodes(forXPath: "//*[@id=\"wp\"]/table[\(table)]/tr[2]/td[2]/a[2]").first as? XMLElement,
-                        let hrefNode = result.attribute(forName: "href"),
-                        let href = hrefNode.stringValue,
-                        let url = URLComponents(string: href),
-                        let sidString = url.queryItems?.first(where: { (item) -> Bool in
-                            item.name == "sid"
-                        })?.value {
-                        return Int(sidString) ?? ZhuixinfanDB.newestSid
-                    }
+        do {
+            let document = try XMLDocument(contentsOf: ZhuixinfanDB.zxfMainPage, options: .documentTidyHTML)
+            for table in 2...8 {
+                if let result = try document.nodes(forXPath: "//*[@id=\"wp\"]/table[\(table)]/tr[2]/td[2]/a[2]").first as? XMLElement,
+                    let hrefNode = result.attribute(forName: "href"),
+                    let href = hrefNode.stringValue,
+                    let url = URLComponents(string: href),
+                    let sidString = url.queryItems?.first(where: { (item) -> Bool in
+                        item.name == "sid"
+                    })?.value {
+                    return Int(sidString) ?? ZhuixinfanDB.newestSid
                 }
-                return ZhuixinfanDB.newestSid
-            } catch {
-                Log.error(error.localizedDescription)
-                return ZhuixinfanDB.newestSid
             }
+            return ZhuixinfanDB.newestSid
+        } catch {
+            Log.error(error.localizedDescription)
+            return ZhuixinfanDB.newestSid
         }
     }
     

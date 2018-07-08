@@ -23,6 +23,14 @@ Log.debug("DEBUG MODE")
 #else
 var working = false
 
+#if swift(>=4.2)
+#else
+extension Bool {
+    mutating func toggle() {
+        self = !self
+    }
+}
+#endif
 Jobs.add(interval: .seconds(updateTimeInterval)) {
     if working {
         return

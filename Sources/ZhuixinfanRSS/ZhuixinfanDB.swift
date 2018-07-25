@@ -10,6 +10,7 @@ import SwiftKuery
 import SwiftKueryORM
 import SwiftKueryPostgreSQL
 import LoggerAPI
+import Kwift
 
 class ZhuixinfanDB {
     
@@ -74,35 +75,6 @@ class ZhuixinfanDB {
 
     }
     
-    func sidExists(_ sid: Int) -> Bool {
-        
-        struct QuerySid: QueryParams {
-            let sid: Int
-        }
-        var res = false
-        let cond = NSCondition()
-        cond.lock()
-        var taskFinished = false
-        ZhuixinfanResource.find(id: sid) { (source, error) in
-            cond.lock()
-            if let _ = source {
-                res = true
-            } else {
-                print(error?.description ?? "No Error Info.")
-            }
-            taskFinished = true
-            cond.signal()
-            cond.unlock()
-        }
-        while taskFinished == false {
-            cond.wait()
-        }
-        cond.unlock()
-        
-        return res
-
-    }
-    
     let fetchQueue: OperationQueue
     
     func fetch(sid: Int) {
@@ -153,6 +125,7 @@ class ZhuixinfanDB {
                 cb("")
                 return
             }
+            
             autoreleasepool(invoking: {
                 let root = XMLElement(name: "rss")
                 root.setAttributesWith(["version": "2.0"])

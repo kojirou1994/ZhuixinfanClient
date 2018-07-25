@@ -2,7 +2,6 @@ import Foundation
 import Kitura
 import HeliumLogger
 import LoggerAPI
-import Jobs
 
 #if DEBUG
 HeliumLogger.use(.debug)
@@ -18,43 +17,27 @@ let updateTimeInterval: TimeInterval = 30
 let updateTimeInterval: TimeInterval = 3600 * 2
 #endif
 
-#if DEBUG
-Log.debug("DEBUG MODE")
-#else
-var working = false
+let updateQueue = DispatchQueue.init(label: "ZhuixinfanRSS")
 
-#if swift(>=4.2)
-#else
-extension Bool {
-    mutating func toggle() {
-        self = !self
-    }
+func update() {
+    Log.info("Begin update")
+    db.newestSidLocal(callback: { (newestSidLocal) in
+        let newestSidLocal = newestSidLocal + 1
+        let newestSidRemote = db.newestSidRemote()
+        guard newestSidLocal <= newestSidRemote else {
+            Log.info("Newest SID local: \(newestSidLocal), Newest SID remote: \(newestSidRemote)")
+            return
+        }
+        Log.info("Start get links from \(newestSidLocal) to \(newestSidRemote)")
+        for sid in newestSidLocal...newestSidRemote {
+            db.fetch(sid: sid)
+        }
+        db.fetchQueue.waitUntilAllOperationsAreFinished()
+        Log.info("Finish update")
+        updateQueue.asyncAfter(deadline: DispatchTime.now() + updateTimeInterval, execute: update)
+    })
 }
-#endif
-Jobs.add(interval: .seconds(updateTimeInterval)) {
-    if working {
-        return
-    } else {
-        working.toggle()
-        Log.info("Begin update")
-        db.newestSidLocal(callback: { (newestSidLocal) in
-            let newestSidLocal = newestSidLocal + 1
-            let newestSidRemote = db.newestSidRemote()
-            guard newestSidLocal <= newestSidRemote else {
-                Log.info("Newest SID local: \(newestSidLocal), Newest SID remote: \(newestSidRemote)")
-                return
-            }
-            Log.info("Start get links from \(newestSidLocal) to \(newestSidRemote)")
-            for sid in newestSidLocal...newestSidRemote {
-                db.fetch(sid: sid)
-            }
-            db.fetchQueue.waitUntilAllOperationsAreFinished()
-            Log.info("Finish update")
-            working.toggle()
-        })
-    }
-}
-#endif
+update()
 
 let router = Router()
 

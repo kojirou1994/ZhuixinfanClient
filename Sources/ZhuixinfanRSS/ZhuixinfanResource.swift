@@ -25,11 +25,11 @@ struct ZhuixinfanResource: Codable {
         self.sid = sid
         self.text = text
         if ed2k.hasPrefix("magnet"), magnet.hasPrefix("ed2k") {
-            self.ed2k = magnet.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-            self.magnet = ed2k.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+            self.ed2k = magnet.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).trimmingCharacters(in: CharacterSet.controlCharacters)
+            self.magnet = ed2k.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).trimmingCharacters(in: CharacterSet.controlCharacters)
         } else {
-            self.ed2k = ed2k.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-            self.magnet = magnet.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+            self.ed2k = ed2k.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).trimmingCharacters(in: CharacterSet.controlCharacters)
+            self.magnet = magnet.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).trimmingCharacters(in: CharacterSet.controlCharacters)
         }
         self.drive1 = drive1
         self.drive2 = drive2

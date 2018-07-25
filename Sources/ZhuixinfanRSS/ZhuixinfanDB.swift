@@ -155,6 +155,7 @@ class ZhuixinfanDB {
                 cb("")
                 return
             }
+            
             autoreleasepool(invoking: {
                 let root = XMLElement(name: "rss")
                 root.setAttributesWith(["version": "2.0"])
@@ -168,10 +169,10 @@ class ZhuixinfanDB {
                     item.addChild(XMLElement(name: "title", stringValue: resource.text))
                     let link = XMLElement(name: "link")
                     let linkCDATA = XMLNode(kind: .text, options: .nodeIsCDATA)
-                    linkCDATA.stringValue = resource.magnet
+                    linkCDATA.stringValue = resource.magnet.trimmingCharacters(in: CharacterSet.controlCharacters)
                     link.addChild(linkCDATA)
                     item.addChild(link)
-                    item.addChild(XMLElement(name: "description", stringValue: resource.text))
+                    item.addChild(XMLElement(name: "description", stringValue: "drive1: \(resource.drive1 ?? "None") drive2: \(resource.drive2 ?? "None")"))
                     channel.addChild(item)
                 })
                 

@@ -25,7 +25,8 @@ func update() {
         let newestSidLocal = newestSidLocal + 1
         let newestSidRemote = db.newestSidRemote()
         guard newestSidLocal <= newestSidRemote else {
-            Log.info("Newest SID local: \(newestSidLocal), Newest SID remote: \(newestSidRemote)")
+            Log.info("Newest SID local: \(newestSidLocal-1), Newest SID remote: \(newestSidRemote)")
+            updateQueue.asyncAfter(deadline: DispatchTime.now() + updateTimeInterval, execute: update)
             return
         }
         Log.info("Start get links from \(newestSidLocal) to \(newestSidRemote)")

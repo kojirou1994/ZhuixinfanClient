@@ -38,7 +38,7 @@ func update() {
         updateQueue.asyncAfter(deadline: DispatchTime.now() + updateTimeInterval, execute: update)
     })
 }
-update()
+updateQueue.async(execute: update)
 
 let router = Router()
 

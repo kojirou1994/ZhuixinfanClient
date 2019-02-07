@@ -8,6 +8,26 @@
 import Foundation
 import SwiftKueryORM
 
+extension CharacterSet {
+    public func contains(_ member: Character) -> Bool {
+        let us = member.unicodeScalars
+        if us.count == 1 {
+            return contains(us.first!)
+        } else {
+            return false
+        }
+    }
+}
+func cleanText(_ str: String) -> String {
+    var out = ""
+    for char in str {
+        if !(CharacterSet.whitespacesAndNewlines.contains(char) || CharacterSet.controlCharacters.contains(char)) {
+            out.append(char)
+        }
+    }
+    return out
+}
+
 struct ZhuixinfanResource: Codable {
     
     let sid: Int
@@ -25,11 +45,11 @@ struct ZhuixinfanResource: Codable {
         self.sid = sid
         self.text = text
         if ed2k.hasPrefix("magnet"), magnet.hasPrefix("ed2k") {
-            self.ed2k = magnet.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).trimmingCharacters(in: CharacterSet.controlCharacters)
-            self.magnet = ed2k.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).trimmingCharacters(in: CharacterSet.controlCharacters)
+            self.ed2k = cleanText(magnet)
+            self.magnet = cleanText(ed2k)
         } else {
-            self.ed2k = ed2k.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).trimmingCharacters(in: CharacterSet.controlCharacters)
-            self.magnet = magnet.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).trimmingCharacters(in: CharacterSet.controlCharacters)
+            self.ed2k = cleanText(ed2k)
+            self.magnet = cleanText(magnet)
         }
         self.drive1 = drive1
         self.drive2 = drive2

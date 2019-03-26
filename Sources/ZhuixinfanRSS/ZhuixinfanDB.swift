@@ -17,7 +17,7 @@ class ZhuixinfanDB {
     let server: ConnectionPool
     
     init() {
-        server = PostgreSQLConnection.createPool(host: "localhost", port: 5432, options: [.databaseName("zhuixinfan")], poolOptions: ConnectionPoolOptions(initialCapacity: 10, maxCapacity: 50, timeout: 10000))
+        server = PostgreSQLConnection.createPool(host: "localhost", port: 5432, options: [.databaseName("zhuixinfan")], poolOptions: ConnectionPoolOptions.init(initialCapacity: 10, maxCapacity: 50))
         Database.default = Database.init(server)
         do {
             try ZhuixinfanResource.createTableSync()
@@ -62,17 +62,18 @@ class ZhuixinfanDB {
         
         let query = Select.init(max(RawField.init("sid")), from: table)
 
-        server.getConnection()?.execute(query: query, onCompletion: { (result) in
-
-            if let rows = result.asRows, let row = rows.first, let sid = row.values.first, let sidValue = sid as? Int64 {
-                callback(Int(sidValue))
-            } else {
-                callback(0)
-                Log.info(result.asError!.localizedDescription)
-            }
-
+        server.getConnection(poolTask: { (connection, error) in
+            connection?.execute(query: query, onCompletion: { (result) in
+                result.asRows(onCompletion: { (r) in
+                    if let rows = r.0, let row = rows.first, let sid = row.values.first, let sidValue = sid as? Int64 {
+                        callback(Int(sidValue))
+                    } else {
+                        callback(0)
+                        Log.info(result.asError!.localizedDescription)
+                    }
+                })
+            })
         })
-
     }
     
     let fetchQueue: OperationQueue
